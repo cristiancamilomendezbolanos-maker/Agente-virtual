@@ -2,241 +2,165 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Gemini 3.5 Chat Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente Gemini 3.5 - Voz Real</title>
   <style>
-    :root {
-      --bg-color: #f4f7f6;
-      --chat-bg: #ffffff;
-      --user-msg-bg: #2563eb;
-      --user-msg-text: #ffffff;
-      --bot-msg-bg: #f1f5f9;
-      --bot-msg-text: #334155;
-      --input-bg: #ffffff;
-      --border-color: #e2e8f0;
-    }
-
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-color);
-      margin: 0;
-      padding: 0;
+      background-color: #f0f4f8;
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Cabecera */
-    header {
-      background-color: var(--chat-bg);
-      padding: 15px 20px;
-      border-bottom: 1px solid var(--border-color);
-      text-align: center;
-      font-weight: 700;
-      color: #1e293b;
-      font-size: 18px;
-    }
-
-    #status {
-      font-size: 12px;
-      color: #64748b;
-      font-weight: 400;
-    }
-
-    /* Área de Chat */
-    #chat-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      scroll-behavior: smooth;
-    }
-
-    .message {
-      max-width: 85%;
-      padding: 12px 16px;
-      border-radius: 18px;
-      font-size: 15px;
-      line-height: 1.4;
-      position: relative;
-      word-wrap: break-word;
-    }
-
-    .user {
-      align-self: flex-end;
-      background-color: var(--user-msg-bg);
-      color: var(--user-msg-text);
-      border-bottom-right-radius: 4px;
-    }
-
-    .bot {
-      align-self: flex-start;
-      background-color: var(--bot-msg-bg);
-      color: var(--bot-msg-text);
-      border-bottom-left-radius: 4px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-
-    .typing-indicator {
-      font-style: italic;
-      color: #94a3b8;
-      font-size: 13px;
-      margin-left: 10px;
-    }
-
-    /* Área de Entrada */
-    #input-area {
-      background-color: var(--input-bg);
-      padding: 10px 15px;
-      display: flex;
       align-items: center;
-      gap: 10px;
-      border-top: 1px solid var(--border-color);
-      padding-bottom: calc(10px + env(safe-area-inset-bottom)); /* Ajuste para iPhones nuevos */
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
-
-    #user-input {
-      flex: 1;
-      padding: 12px 15px;
-      border: 1px solid var(--border-color);
-      border-radius: 25px;
-      font-size: 16px; /* Evita zoom automático en iOS */
-      outline: none;
-      transition: border-color 0.2s;
+    .container {
+      background: white;
+      padding: 35px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      text-align: center;
+      max-width: 420px;
+      width: 90%;
+      box-sizing: border-box;
     }
-
-    #user-input:focus {
-      border-color: #93c5fd;
-    }
-
-    #send-btn {
-      background-color: var(--user-msg-bg);
+    h2 { color: #1e293b; margin-top: 0; font-size: 24px; }
+    p.desc { color: #64748b; font-size: 14px; margin-bottom: 25px; }
+    button {
+      background-color: #2563eb;
       color: white;
       border: none;
-      padding: 12px 20px;
-      border-radius: 25px;
+      padding: 16px 32px;
+      font-size: 16px;
       font-weight: 600;
-      font-size: 15px;
+      border-radius: 50px;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: all 0.3s ease;
+      outline: none;
     }
-
-    #send-btn:active {
-      background-color: #1d4ed8;
+    button.listening {
+      background-color: #ef4444;
+      animation: pulse 1.5s infinite;
     }
-
-    #send-btn:disabled {
-      background-color: #cbd5e1;
-      cursor: not-allowed;
+    #status { margin-top: 25px; font-weight: 600; color: #475569; font-size: 15px; }
+    #output {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #334155;
+      text-align: left;
+      max-height: 150px;
+      overflow-y: auto;
+      padding: 12px 15px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+      70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
   </style>
 </head>
 <body>
 
-  <header>
-    Gemini 3.5 Flash <br>
-    <span id="status">Prueba de conexión (Escrita)</span>
-  </header>
-  
-  <div id="chat-container">
-    <div class="message bot">¡Hola! Esta es una prueba de chat escrito. Escribe algo abajo para verificar si tu clave de API gratuita conecta correctamente desde GitHub Pages en tu celular. No usaré voz en esta prueba.</div>
+  <div class="container">
+    <h2>Asistente Gemini 3.5</h2>
+    <p class="desc">Toca el botón, habla de corrido y la IA te responderá con voz.</p>
+    
+    <button id="micBtn">Iniciar Conversación</button>
+    <div id="status">Listo para escuchar</div>
+    
+    <div id="output">
+      <strong>Historial:</strong>
+      <p id="log" style="margin: 5px 0 0 0; color: #64748b;">Las interacciones aparecerán aquí...</p>
+    </div>
   </div>
-  
-  <div id="input-area">
-    <input type="text" id="user-input" placeholder="Escribe tu mensaje aquí..." autofocus>
-    <button id="send-btn">Enviar</button>
-  </div>
 
-  <script type="module">
-    // Importación compatible y estable para navegadores móviles
-    import { GoogleGenerativeAI } from 'https://esm.run/@google/generative-ai';
-
-    // Tu API Key gratuita activa
-    const API_KEY = 'AQ.Ab8RN6LmKV8hIUJrfARzGH75rbbXxHRJHaPmXFz2snE4XyW_Rg';
-    const genAI = new GoogleGenerativeAI(API_KEY);
-
-    const chatContainer = document.getElementById('chat-container');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
+  <script>
+    const micBtn = document.getElementById('micBtn');
     const statusDiv = document.getElementById('status');
+    const logPara = document.getElementById('log');
 
-    async function enviarMensaje() {
-      const texto = userInput.value.trim();
-      if (!texto || sendBtn.disabled) return;
+    // Tu URL de Apps Script integrada directamente como puente seguro
+    const URL_PUENTE_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbyNLHPinXkH3z_QMlXSQdI89Fw9Woz5Frp4UEhKYC7Dgx0Aj0HMlKlXJjetcShL-rIemg/exec';
 
-      // 1. Renderizar mensaje del usuario
-      agregarMensaje(texto, 'user');
-      userInput.value = '';
-      
-      // 2. Bloquear entrada y mostrar estado de carga
-      sendBtn.disabled = true;
-      statusDiv.textContent = "Gemini está pensando...";
-      const typingId = agregarIndicadorCarga();
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+    let isListening = false;
 
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isListening = true;
+        micBtn.textContent = "Escuchando...";
+        micBtn.classList.add('listening');
+        statusDiv.textContent = "Te escucho, habla ahora...";
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        micBtn.textContent = "Iniciar Conversación";
+        micBtn.classList.remove('listening');
+      };
+
+      recognition.onresult = async (event) => {
+        const textoUsuario = event.results[0][0].transcript;
+        logPara.innerHTML = `<strong>Tú:</strong> ${textoUsuario}`;
+        await consultarGeminiViaPuente(textoUsuario);
+      };
+
+      recognition.onerror = (event) => {
+        statusDiv.textContent = `Error de micrófono: ${event.error}`;
+      };
+    } else {
+      statusDiv.textContent = "Hardware de voz no soportado.";
+      micBtn.disabled = true;
+    }
+
+    micBtn.addEventListener('click', () => {
+      if (!isListening && recognition) {
+        window.speechSynthesis.cancel();
+        recognition.start();
+      }
+    });
+
+    async function consultarGeminiViaPuente(promptTexto) {
+      statusDiv.textContent = "Procesando en Apps Script...";
       try {
-        // 3. Conectar con el modelo
-        const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
-        
-        const result = await model.generateContent(texto);
-        const response = await result.response;
-        const respuestaIA = response.text();
-        
-        // 4. Eliminar carga y renderizar respuesta
-        removerIndicadorCarga(typingId);
-        agregarMensaje(respuestaIA, 'bot');
-        statusDiv.textContent = "Conexión exitosa";
+        // Enviamos el texto capturado por el micrófono al puente seguro de Google
+        const response = await fetch(URL_PUENTE_APPS_SCRIPT, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ texto: promptTexto })
+        });
+
+        const data = await response.json();
+        const respuestaIA = data.respuesta;
+
+        logPara.innerHTML += `<br><br><strong>Gemini 3.5:</strong> ${respuestaIA}`;
+        reproducirVoz(respuestaIA);
 
       } catch (error) {
-        // 5. Manejo de errores de conexión
-        removerIndicadorCarga(typingId);
-        console.error("Error de Gemini:", error);
-        
-        agregarMensaje(`Lo siento, hubo un error de conexión con la IA. Detalles: ${error.message}`, 'bot');
-        statusDiv.textContent = "Error de conexión";
-      } finally {
-        // 6. Reactivar entrada
-        sendBtn.disabled = false;
-        userInput.focus();
+        console.error(error);
+        statusDiv.textContent = "Error en el puente de la IA.";
       }
     }
 
-    // Funciones auxiliares de interfaz
-    function agregarMensaje(texto, remitente) {
-      const msgDiv = document.createElement('div');
-      msgDiv.classList.add('message', remitente);
-      msgDiv.innerText = texto;
-      chatContainer.appendChild(msgDiv);
-      desplazarAbajo();
+    function reproducirVoz(texto) {
+      statusDiv.textContent = "Hablando...";
+      window.speechSynthesis.cancel();
+      const sintesis = new SpeechSynthesisUtterance(texto);
+      sintesis.lang = 'es-ES';
+      sintesis.onend = () => { statusDiv.textContent = "Listo"; };
+      window.speechSynthesis.speak(sintesis);
     }
-
-    function agregarIndicadorCarga() {
-      const id = 'typing-' + Date.now();
-      const loadDiv = document.createElement('div');
-      loadDiv.id = id;
-      loadDiv.classList.add('typing-indicator');
-      loadDiv.innerText = "Gemini está escribiendo...";
-      chatContainer.appendChild(loadDiv);
-      desplazarAbajo();
-      return id;
-    }
-
-    function removerIndicadorCarga(id) {
-      const element = document.getElementById(id);
-      if (element) element.remove();
-    }
-
-    function desplazarAbajo() {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    // Eventos de control
-    sendBtn.addEventListener('click', enviarMensaje);
-    userInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') enviarMensaje();
-    });
   </script>
 </body>
 </html>
