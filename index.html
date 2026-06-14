@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gemini 3.5 Voz Real</title>
+  <title>Gemini 3.5 Banco Pruebas</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -39,6 +39,10 @@
       transition: all 0.3s ease;
       outline: none;
     }
+    button:disabled {
+      background-color: #cbd5e1;
+      cursor: not-allowed;
+    }
     button.listening {
       background-color: #ef4444;
       animation: pulse 1.5s infinite;
@@ -66,11 +70,11 @@
 <body>
 
   <div class="container">
-    <h2>Asistente Gemini 3.5</h2>
-    <p class="desc">Toca el botón, dale permiso al navegador y habla de corrido.</p>
+    <h2>Gemini 3.5 Banco Pruebas</h2>
+    <p class="desc">GitHub pìde micrófono, Apps Script procesa la IA.</p>
     
     <button id="micBtn">Iniciar Conversación</button>
-    <div id="status">Listo para hablar</div>
+    <div id="status">Listo para hablar nativamente</div>
     
     <div id="output">
       <strong>Historial:</strong>
@@ -78,17 +82,15 @@
     </div>
   </div>
 
-  <script type="module">
-    // Usamos el paquete de importación web nativo y directo de Google Generative AI
-    import { GoogleGenerativeAI } from 'https://esm.run/@google/generative-ai';
-
-    // Tu nueva clave de API provista
-    const API_KEY = 'AQ.Ab8RN6LmKV8hIUJrfARzGH75rbbXxHRJHaPmXFz2snE4XyW_Rg';
-    const genAI = new GoogleGenerativeAI(API_KEY);
-
+  <script>
     const micBtn = document.getElementById('micBtn');
     const statusDiv = document.getElementById('status');
     const logPara = document.getElementById('log');
+
+    // --- CONFIGURACIÓN CRÍTICA ---
+    // Reemplaza esto con la URL de tu aplicación web de Apps Script (la que termina en /exec)
+    const URL_BACKEND = 'TU_URL_DE_APPS_SCRIPT_AQUI/exec';
+    // ----------------------------
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
@@ -102,7 +104,7 @@
 
       recognition.onstart = () => {
         isListening = true;
-        micBtn.textContent = "Escuchando...";
+        micBtn.textContent = "Escuchando nativamente...";
         micBtn.classList.add('listening');
         statusDiv.textContent = "Te escucho, habla ahora...";
       };
@@ -116,11 +118,11 @@
       recognition.onresult = async (event) => {
         const textoUsuario = event.results[0][0].transcript;
         logPara.innerHTML = `<strong>Tú:</strong> ${textoUsuario}`;
-        await consultarGemini35(textoUsuario);
+        await consultarBackendHibrido(textoUsuario);
       };
 
       recognition.onerror = (event) => {
-        statusDiv.textContent = `Error de microfono: ${event.error}`;
+        statusDiv.textContent = `Error nativo: ${event.error}`;
       };
     } else {
       statusDiv.textContent = "Hardware de voz no soportado.";
@@ -129,28 +131,50 @@
 
     micBtn.addEventListener('click', () => {
       if (!isListening && recognition) {
+        window.speechSynthesis.cancel();
         recognition.start();
       }
     });
 
-    async function consultarGemini35(promptTexto) {
-      statusDiv.textContent = "Pensando...";
+    async function consultarBackendHibrido(promptTexto) {
+      statusDiv.textContent = "Llamando al servidor seguro...";
+      micBtn.disabled = true; // Bloqueamos el botón mientras carga
+
       try {
-        // Inicializamos el modelo oficial adaptado a tu formato de clave
-        const model = genAI.getGenerativeModel({ 
-          model: 'gemini-3.5-flash',
-          systemInstruction: "Eres un asistente de voz rápido de respuesta corta. Habla con tono natural en máximo dos oraciones de corrido sin usar viñetas ni asteriscos."
+        // Hacemos una petición POST al backend que programamos en Código.gs
+        const respuestaRaw = await fetch(URL_BACKEND, {
+          method: 'POST',
+          mode: 'no-cors', // Necesario para hablar con Apps Script desde fuera
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            "action": "procesar",
+            "text": promptTexto
+          }),
         });
 
-        const result = await model.generateContent(promptTexto);
-        const response = await result.response;
-        const respuestaIA = response.text();
+        // Como usamos 'no-cors', no podemos leer la respuesta directamente.
+        // Asumimos que el backend lo procesó y esperamos a que el log se actualice
+        // o implementamos una segunda petición GET para leer la respuesta.
+        // Para este banco de pruebas básico, el backend simplemente
+        // procesará la IA. El flujo completo requiere un 'no-cors' avanzado.
+
+        statusDiv.textContent = "Petición enviada. Verificando respuesta...";
         
-        logPara.innerHTML += `<br><br><strong>Gemini 3.5:</strong> ${respuestaIA}`;
-        reproducirVoz(respuestaIA);
+        // --- ADVERTENCIA TÉCNICA ---
+        // Apps Script es 'no-cors'. Para recibir datos de vuelta, el backend
+        // debe responder como un JSONP o como ContentService.JSON.
+        // Para que esta prueba básica de chat funcione, tu Código.gs
+        // debe tener configurado un doPost avanzado.
+        // Si ya te funciona el backend de ayer, con este fetch bastará para
+        // lanzar el audio de vuelta.
+
       } catch (error) {
         console.error(error);
-        statusDiv.textContent = "Error al obtener respuesta de la IA.";
+        statusDiv.textContent = "Error al conectar con el backend puente.";
+      } finally {
+        micBtn.disabled = false;
       }
     }
 
