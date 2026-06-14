@@ -79,10 +79,12 @@
   </div>
 
   <script type="module">
-    import { GoogleGenAI } from 'https://esm.run/@google/genai';
+    // Usamos el paquete de importación web nativo y directo de Google Generative AI
+    import { GoogleGenerativeAI } from 'https://esm.run/@google/generative-ai';
 
-    const API_KEY = 'AQ.Ab8RN6JV1byc_VFC5nqoGHpnR2pVG2jGYMSqEAoNB1WV5q8F2Q';
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    // Tu nueva clave de API provista
+    const API_KEY = 'AQ.Ab8RN6LmKV8hIUJrfARzGH75rbbXxHRJHaPmXFz2snE4XyW_Rg';
+    const genAI = new GoogleGenerativeAI(API_KEY);
 
     const micBtn = document.getElementById('micBtn');
     const statusDiv = document.getElementById('status');
@@ -118,10 +120,10 @@
       };
 
       recognition.onerror = (event) => {
-        statusDiv.textContent = `Error: ${event.error}`;
+        statusDiv.textContent = `Error de microfono: ${event.error}`;
       };
     } else {
-      statusDiv.textContent = "Hardware no soportado.";
+      statusDiv.textContent = "Hardware de voz no soportado.";
       micBtn.disabled = true;
     }
 
@@ -134,18 +136,21 @@
     async function consultarGemini35(promptTexto) {
       statusDiv.textContent = "Pensando...";
       try {
-        const response = await ai.models.generateContent({
+        // Inicializamos el modelo oficial adaptado a tu formato de clave
+        const model = genAI.getGenerativeModel({ 
           model: 'gemini-3.5-flash',
-          contents: promptTexto,
-          config: {
-            systemInstruction: "Eres un asistente de voz rápido de respuesta corta. Habla con tono natural en máximo dos oraciones."
-          }
+          systemInstruction: "Eres un asistente de voz rápido de respuesta corta. Habla con tono natural en máximo dos oraciones de corrido sin usar viñetas ni asteriscos."
         });
-        const respuestaIA = response.text;
+
+        const result = await model.generateContent(promptTexto);
+        const response = await result.response;
+        const respuestaIA = response.text();
+        
         logPara.innerHTML += `<br><br><strong>Gemini 3.5:</strong> ${respuestaIA}`;
         reproducirVoz(respuestaIA);
       } catch (error) {
-        statusDiv.textContent = "Error de conexión con la IA.";
+        console.error(error);
+        statusDiv.textContent = "Error al obtener respuesta de la IA.";
       }
     }
 
