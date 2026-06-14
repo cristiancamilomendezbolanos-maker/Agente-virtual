@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini 3.5 Voz Real</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 35px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      text-align: center;
+      max-width: 420px;
+      width: 90%;
+      box-sizing: border-box;
+    }
+    h2 { color: #1e293b; margin-top: 0; font-size: 24px; }
+    p.desc { color: #64748b; font-size: 14px; margin-bottom: 25px; }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+    button.listening {
+      background-color: #ef4444;
+      animation: pulse 1.5s infinite;
+    }
+    #status { margin-top: 25px; font-weight: 600; color: #475569; font-size: 15px; }
+    #output {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #334155;
+      text-align: left;
+      max-height: 150px;
+      overflow-y: auto;
+      padding: 12px 15px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+      70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Asistente Gemini 3.5</h2>
+    <p class="desc">Toca el botón, dale permiso al navegador y habla de corrido.</p>
+    
+    <button id="micBtn">Iniciar Conversación</button>
+    <div id="status">Listo para hablar</div>
+    
+    <div id="output">
+      <strong>Historial:</strong>
+      <p id="log" style="margin: 5px 0 0 0; color: #64748b;">Las interacciones aparecerán aquí...</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { GoogleGenAI } from 'https://esm.run/@google/genai';
+
+    const API_KEY = 'AQ.Ab8RN6JV1byc_VFC5nqoGHpnR2pVG2jGYMSqEAoNB1WV5q8F2Q';
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+    const micBtn = document.getElementById('micBtn');
+    const statusDiv = document.getElementById('status');
+    const logPara = document.getElementById('log');
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+    let isListening = false;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isListening = true;
+        micBtn.textContent = "Escuchando...";
+        micBtn.classList.add('listening');
+        statusDiv.textContent = "Te escucho, habla ahora...";
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        micBtn.textContent = "Iniciar Conversación";
+        micBtn.classList.remove('listening');
+      };
+
+      recognition.onresult = async (event) => {
+        const textoUsuario = event.results[0][0].transcript;
+        logPara.innerHTML = `<strong>Tú:</strong> ${textoUsuario}`;
+        await consultarGemini35(textoUsuario);
+      };
+
+      recognition.onerror = (event) => {
+        statusDiv.textContent = `Error: ${event.error}`;
+      };
+    } else {
+      statusDiv.textContent = "Hardware no soportado.";
+      micBtn.disabled = true;
+    }
+
+    micBtn.addEventListener('click', () => {
+      if (!isListening && recognition) {
+        recognition.start();
+      }
+    });
+
+    async function consultarGemini35(promptTexto) {
+      statusDiv.textContent = "Pensando...";
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.5-flash',
+          contents: promptTexto,
+          config: {
+            systemInstruction: "Eres un asistente de voz rápido de respuesta corta. Habla con tono natural en máximo dos oraciones."
+          }
+        });
+        const respuestaIA = response.text;
+        logPara.innerHTML += `<br><br><strong>Gemini 3.5:</strong> ${respuestaIA}`;
+        reproducirVoz(respuestaIA);
+      } catch (error) {
+        statusDiv.textContent = "Error de conexión con la IA.";
+      }
+    }
+
+    function reproducirVoz(texto) {
+      statusDiv.textContent = "Hablando...";
+      window.speechSynthesis.cancel();
+      const sintesis = new SpeechSynthesisUtterance(texto);
+      sintesis.lang = 'es-ES';
+      sintesis.onend = () => { statusDiv.textContent = "Listo"; };
+      window.speechSynthesis.speak(sintesis);
+    }
+  </script>
+</body>
+</html>
